@@ -111,7 +111,6 @@ export default defineComponent({
       color: '',
     });
     const open = (one: UriData) => {
-      console.log('dialog:', one);
       if (one) {
         dialogType.value = 'EDIT';
         formModel.id = one.id;
@@ -134,7 +133,6 @@ export default defineComponent({
     const hide = () => {
       visible.value = false;
     };
-    console.log('dialog data:', formModel);
 
     const $q = useQuasar();
 
@@ -168,7 +166,6 @@ export default defineComponent({
             key: QUICKGO_DATA_LIST_KEY,
             data: list,
           };
-          debugger;
           $q.bex
             .send('storage.set', payload)
             .then((res: StorageDrawerData<UriData[]>) => {
@@ -193,9 +190,7 @@ export default defineComponent({
       formModel,
       onSubmit,
 
-      onReset() {
-        console.log('1');
-      },
+      onReset() {},
       open,
       hide,
     };
