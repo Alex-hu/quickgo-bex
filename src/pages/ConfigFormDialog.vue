@@ -1,5 +1,5 @@
 <template>
-  <q-dialog v-model="visible" :maximized="true">
+  <q-dialog v-model="visible">
     <q-card class="my-card">
       <q-card-section class="row items-center">
         <div class="text-h6">{{ dialogType == 'EDIT' ? '编辑' : '添加' }}</div>

@@ -27,6 +27,22 @@
           no-caps
           @click="add"
         />
+        <q-space style="margin: 5px" />
+        <q-btn
+          color="secondary"
+          icon-right="upload_file"
+          label="导入"
+          no-caps
+          @click="impt"
+        />
+        <q-space style="margin: 5px" />
+        <q-btn
+          color="red"
+          icon-right="download"
+          label="导出"
+          no-caps
+          @click="expt"
+        />
       </template>
       <template v-slot:body-cell-action="props">
         <q-td :props="props">
@@ -64,18 +80,45 @@
     </q-dialog>
   </div>
   <ConfigFormDialog ref="dialogComp" :onSuccess="refresh"></ConfigFormDialog>
+  <ImportDialog ref="importComp" :onSuccess="refresh"></ImportDialog>
+  <q-dialog v-model="exportDataDialog" :full-width="true">
+    <q-card>
+      <q-card-section class="row items-center q-pb-none">
+        <div class="text-h6">数据导出</div>
+        <q-space />
+        <q-btn icon="close" flat round dense v-close-popup />
+      </q-card-section>
+
+      <q-card-section v-if="listData === undefined">
+        暂无数据，请先添加。
+      </q-card-section>
+      <q-card-section v-else>
+        <q-input
+          v-model="exportData"
+          filled
+          clearable
+          type="textarea"
+          color="red-12"
+          label="导出数据"
+        />
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 <script lang="ts">
 import { defineComponent, ref, computed } from 'vue';
 import { StorageDrawerData, UriData } from './types';
 import ConfigFormDialog from './ConfigFormDialog.vue';
+import ImportDialog from './ImportDialog.vue';
 import { useQuasar } from 'quasar';
 import { QUICKGO_DATA_LIST_KEY } from 'src/service/storageKey';
+// import defaultCandidates from 'src/service/defaultData';
 
 export default defineComponent({
   name: 'ConfigPage',
   components: {
     ConfigFormDialog,
+    ImportDialog,
   },
   setup() {
     const columns = [
@@ -124,10 +167,23 @@ export default defineComponent({
     ];
 
     const dialogComp = ref();
+    const importComp = ref();
 
     const add = () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       dialogComp.value?.open();
+    };
+
+    const impt = () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      importComp.value?.open();
+    };
+
+    let exportDataDialog = ref(false);
+    const expt = () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      exportDataDialog.value = true;
+      // dialogComp.value?.open();
     };
     const edit = (row: UriData) => {
       console.log('row:', row);
@@ -194,6 +250,9 @@ export default defineComponent({
         return rows.value;
       }
     });
+    const exportData = computed(() => {
+      return JSON.stringify(listData.value, null, 4);
+    });
 
     return {
       filter,
@@ -202,9 +261,14 @@ export default defineComponent({
       columns,
       rows,
       add,
+      impt,
+      expt,
       edit,
       showDelConfirm,
       dialogComp,
+      importComp,
+      exportDataDialog,
+      exportData,
       refresh,
       showConfirm,
       delItem,

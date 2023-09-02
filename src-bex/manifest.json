@@ -1,7 +1,7 @@
 {
   "name": "Quick Go",
   "description": "Go to the specfiy url quickly",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "manifest_version": 2,
   "icons": {
     "16": "icons/icon-16x16.png",
@@ -10,7 +10,7 @@
   },
   "options_page": "www/index.html#/options",
   "browser_action": {
-    "default_title": "Quick Go BEX",
+    "default_title": "Quick Go",
     "default_popup": "www/index.html#/popup"
   },
   "background": {
