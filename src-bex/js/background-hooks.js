@@ -4,6 +4,21 @@
 
 // More info: https://quasar.dev/quasar-cli/developing-browser-extensions/background-hooks
 
+function resolveTabOpenUrl(url) {
+  if (url === null || url === undefined) {
+    return null
+  }
+  if (
+    /^(https?:|chrome:|about:|chrome-extension:)/i.test(url)
+  ) {
+    return url
+  }
+  const hashIdx = url.indexOf('#')
+  const path = hashIdx === -1 ? url : url.slice(0, hashIdx)
+  const hash = hashIdx === -1 ? '' : url.slice(hashIdx)
+  return chrome.runtime.getURL(path) + hash
+}
+
 export default function attachBackgroundHooks(
   bridge /* , allActiveConnections */
 ) {
@@ -28,17 +43,6 @@ export default function attachBackgroundHooks(
 
   bridge.on('storage.set', (event) => {
     const payload = event.data;
-    // var storingNote = browser.storage.local.set({
-    //   [payload.key]: payload.data,
-    // });
-    // storingNote.then(
-    //   () => {
-    //     bridge.send(event.eventResponseKey, payload.data);
-    //   },
-    //   (error) => {
-    //     console.log(`Error: ${error}`);
-    //   }
-    // );
     chrome.storage.local.set({ [payload.key]: payload.data }, () => {
       bridge.send(event.eventResponseKey, payload.data);
     });
@@ -53,22 +57,9 @@ export default function attachBackgroundHooks(
 
   bridge.on('tab.open', (event) => {
     const payload = event.data;
-    if (payload.url !== null) {
-      if (payload.isFireFox) {
-        var creating = browser.tabs.create({
-          url: payload.url,
-        });
-        creating.then(
-          (tab) => {
-            console.log(`Created new tab: ${tab.id}`);
-          },
-          (error) => {
-            console.log(`Error: ${error}`);
-          }
-        );
-      } else {
-        chrome.tabs.create({ url: payload.url });
-      }
+    const target = resolveTabOpenUrl(payload.url);
+    if (target !== null) {
+      chrome.tabs.create({ url: target });
     }
   });
 

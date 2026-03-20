@@ -38,7 +38,7 @@
 import { defineComponent, ref } from 'vue';
 import { useQuasar } from 'quasar';
 import EssentialLink from 'components/EssentialLink.vue';
-import { StorageDrawerData, ToggleStatus } from './types';
+import { ToggleStatus } from './types';
 import { DRAWER_TOGGLE_STATUS_KEY } from 'src/service/storageKey';
 
 export default defineComponent({
@@ -61,9 +61,10 @@ export default defineComponent({
     const $q = useQuasar();
     $q.bex
       .send('storage.get', { key: DRAWER_TOGGLE_STATUS_KEY })
-      .then((res: StorageDrawerData<ToggleStatus>) => {
-        if (res.data) {
-          leftDrawerOpen.value = res.data.open;
+      .then((res) => {
+        const data = res.data as ToggleStatus | undefined;
+        if (data) {
+          leftDrawerOpen.value = data.open;
         } else {
           console.log(res);
         }
@@ -81,8 +82,8 @@ export default defineComponent({
       };
       $q.bex
         .send('storage.set', payload)
-        .then((res: StorageDrawerData<ToggleStatus>) => {
-          leftDrawerOpen.value = res.data.open;
+        .then((res) => {
+          leftDrawerOpen.value = (res.data as ToggleStatus).open;
         })
         .catch((e) => {
           console.log(e);

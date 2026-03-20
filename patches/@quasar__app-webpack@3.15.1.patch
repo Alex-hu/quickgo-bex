@@ -1,0 +1,154 @@
+diff --git a/lib/cmd/build.js b/lib/cmd/build.js
+index 3e5982e673c5f6020b9748eb785103bbb1a90b8a..65db99b950785e42921be4f840d388357a199d29 100755
+--- a/lib/cmd/build.js
++++ b/lib/cmd/build.js
+@@ -246,6 +246,17 @@ async function build () {
+       fatal(`for "${ webpackData.name[ index ] }" with ${ summary }. Please check the log above.`, 'COMPILATION FAILED')
+     })
+ 
++    if (argv.mode === 'bex') {
++      const BexPackager = require('../webpack/bex/plugin.bex-packager')
++      const appPaths = require('../app-paths')
++      const packager = new BexPackager({
++        src: quasarConf.bex.builder.directories.input,
++        dest: quasarConf.bex.builder.directories.output,
++        name: require(appPaths.resolve.app('package.json')).name
++      })
++      await packager.runPackaging()
++    }
++
+     const printWebpackStats = require('../helpers/print-webpack-stats')
+ 
+     console.log()
+diff --git a/lib/webpack/bex/plugin.bex-packager.js b/lib/webpack/bex/plugin.bex-packager.js
+index 673a4227b27a3a014bcb312fc81e0ef05cdb7eb4..45977c321ba6ef5e4e0fc7fbd26122177594027b 100644
+--- a/lib/webpack/bex/plugin.bex-packager.js
++++ b/lib/webpack/bex/plugin.bex-packager.js
+@@ -3,10 +3,26 @@ const fse = require('fs-extra')
+ const archiver = require('archiver')
+ 
+ function findAndReplaceInSection (sectionArray, find, replace) {
++  if (!Array.isArray(sectionArray)) {
++    return
++  }
+   const index = sectionArray.indexOf(find)
++  if (index === -1) {
++    return
++  }
+   sectionArray[ index ] = replace
+ }
+ 
++function patchServiceWorkerPath (manifestData, find, replace) {
++  const sw = manifestData.background && manifestData.background.service_worker
++  if (typeof sw !== 'string') {
++    return
++  }
++  if (sw.indexOf(find) !== -1) {
++    manifestData.background.service_worker = sw.replace(find, replace)
++  }
++}
++
+ class BexPackager {
+   constructor (options) {
+     this.options = options
+@@ -14,15 +30,21 @@ class BexPackager {
+     this.firefoxDir = path.join(options.dest, 'firefox')
+   }
+ 
+-  apply (compiler) {
+-    compiler.hooks.done.tap('done-compiling', stats => {
+-      if (stats.hasErrors() === false) {
+-        this.setupDirectories()
+-        this.fixManifest()
+-        this.bundleChrome()
+-        this.bundleFirefox()
+-      }
+-    })
++  /**
++   * Webpack hook intentionally unused: BEX has two compilers (Main + Renderer).
++   * Running zip from Renderer `done` races Main and produced zips missing
++   * `www/js/bex-background.js`. Packaging is invoked from cmd/build.js after both finish.
++   */
++  apply (/* compiler */) {
++  }
++
++  runPackaging () {
++    this.setupDirectories()
++    this.fixManifest()
++    return Promise.all([
++      this.bundleChrome(),
++      this.bundleFirefox()
++    ])
+   }
+ 
+   /**
+@@ -35,7 +57,10 @@ class BexPackager {
+       const manifestData = JSON.parse(manifestFileData.toString())
+ 
+       findAndReplaceInSection(manifestData.background.scripts, 'www/bex-background.js', 'www/js/bex-background.js')
+-      findAndReplaceInSection(manifestData.content_scripts[ 0 ].js, 'www/bex-content-script.js', 'www/js/bex-content-script.js')
++      patchServiceWorkerPath(manifestData, 'www/bex-background.js', 'www/js/bex-background.js')
++      if (manifestData.content_scripts && manifestData.content_scripts[ 0 ] && manifestData.content_scripts[ 0 ].js) {
++        findAndReplaceInSection(manifestData.content_scripts[ 0 ].js, 'www/bex-content-script.js', 'www/js/bex-content-script.js')
++      }
+       const newValue = JSON.stringify(manifestData)
+       fse.writeFileSync(manifestFilePath, newValue, 'utf-8')
+     }
+@@ -47,22 +72,28 @@ class BexPackager {
+   }
+ 
+   bundleChrome () {
+-    this.outputToZip(this.options.src, this.chromeDir, this.options.name)
++    return this.outputToZip(this.options.src, this.chromeDir, this.options.name)
+   }
+ 
+   bundleFirefox () {
+-    this.outputToZip(this.options.src, this.firefoxDir, this.options.name)
++    return this.outputToZip(this.options.src, this.firefoxDir, this.options.name)
+   }
+ 
+   outputToZip (src, dest, fileName) {
+-    const output = fse.createWriteStream(path.join(dest, fileName + '.zip'))
+-    const archive = archiver('zip', {
+-      zlib: { level: 9 } // Sets the compression level.
+-    })
++    return new Promise((resolve, reject) => {
++      const output = fse.createWriteStream(path.join(dest, fileName + '.zip'))
++      const archive = archiver('zip', {
++        zlib: { level: 9 } // Sets the compression level.
++      })
+ 
+-    archive.pipe(output)
+-    archive.directory(src, false)
+-    archive.finalize()
++      output.on('close', () => resolve())
++      output.on('error', reject)
++      archive.on('error', reject)
++
++      archive.pipe(output)
++      archive.directory(src, false)
++      archive.finalize()
++    })
+   }
+ }
+ 
+diff --git a/lib/webpack/bex/renderer.js b/lib/webpack/bex/renderer.js
+index 9c87db8423f1a89432a05b2469999f861985c54a..58606033f34642e0ab1e6ea8c8aa2866506adb15 100644
+--- a/lib/webpack/bex/renderer.js
++++ b/lib/webpack/bex/renderer.js
+@@ -39,14 +39,7 @@ module.exports = function (chain, cfg) {
+     // Could use Webpack Copy here but this is more straight forward.
+     cfg.build.htmlFilename = path.join('www', 'index.html')
+ 
+-    // Register our plugin, update the manifest and package the browser extension.
+-    const BexPackager = require('./plugin.bex-packager')
+-    chain.plugin('webpack-bex-packager')
+-      .use(BexPackager, [ {
+-        src: cfg.bex.builder.directories.input,
+-        dest: cfg.bex.builder.directories.output,
+-        name: require(appPaths.resolve.app('package.json')).name
+-      } ])
++    // BEX zip + manifest fix run from cmd/build.js after Main + Renderer complete (see plugin.bex-packager).
+ 
+     // Copy our user edited BEX files to the dist dir (excluding the already built www folder)
+     copyPatterns.push({

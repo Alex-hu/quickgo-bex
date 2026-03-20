@@ -58,7 +58,7 @@
 import { QSelect, useQuasar } from 'quasar';
 import { QUICKGO_DATA_LIST_KEY } from 'src/service/storageKey';
 import { defineComponent, ref, watch } from 'vue';
-import { StorageDrawerData, UriData } from './types';
+import { UriData } from './types';
 import defaultCandidates from 'src/service/defaultData';
 
 export default defineComponent({
@@ -72,8 +72,8 @@ export default defineComponent({
     const refresh = () => {
       $q.bex
         .send('storage.get', { key: QUICKGO_DATA_LIST_KEY })
-        .then((res: StorageDrawerData<UriData[]>) => {
-          candidates = res.data as UriData[];
+        .then((res) => {
+          candidates = (res.data as UriData[] | undefined) ?? [];
           if (candidates) {
             candidates = defaultCandidates.concat(candidates);
           } else {

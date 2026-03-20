@@ -88,7 +88,7 @@
 import { useQuasar } from 'quasar';
 import { QUICKGO_DATA_LIST_KEY } from 'src/service/storageKey';
 import { defineComponent, ref, reactive } from 'vue';
-import { StorageDrawerData, UriData } from './types';
+import { UriData } from './types';
 import { v1 as uuidv1 } from 'uuid';
 
 export default defineComponent({
@@ -140,8 +140,8 @@ export default defineComponent({
       // fetch all data
       $q.bex
         .send('storage.get', { key: QUICKGO_DATA_LIST_KEY })
-        .then((res: StorageDrawerData<UriData[]>) => {
-          let list = res.data;
+        .then((res) => {
+          let list: UriData[] = (res.data as UriData[] | undefined) ?? [];
           if (dialogType.value === 'EDIT') {
             // find the edit one, then update the data.
             list.forEach((item) => {
@@ -156,9 +156,6 @@ export default defineComponent({
               }
             });
           } else if (dialogType.value === 'ADD') {
-            if (!list) {
-              list = [];
-            }
             list.push(formModel);
           }
 
@@ -168,8 +165,8 @@ export default defineComponent({
           };
           $q.bex
             .send('storage.set', payload)
-            .then((res: StorageDrawerData<UriData[]>) => {
-              props.onSuccess?.apply(res.data);
+            .then((res) => {
+              props.onSuccess?.apply(res.data as UriData[]);
               hide();
             })
             .catch((e) => {

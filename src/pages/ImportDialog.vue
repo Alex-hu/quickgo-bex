@@ -38,7 +38,7 @@
 import { useQuasar } from 'quasar';
 import { QUICKGO_DATA_LIST_KEY } from 'src/service/storageKey';
 import { defineComponent, ref } from 'vue';
-import { StorageDrawerData, UriData } from './types';
+import { UriData } from './types';
 import { v1 as uuidv1 } from 'uuid';
 
 export default defineComponent({
@@ -97,9 +97,9 @@ export default defineComponent({
       // fetch all data
       $q.bex
         .send('storage.get', { key: QUICKGO_DATA_LIST_KEY })
-        .then((res: StorageDrawerData<UriData[]>) => {
+        .then((res) => {
           // 已有数据
-          let list = res.data || [];
+          let list = (res.data as UriData[] | undefined) || [];
           let newList: UriData[] = [];
           impDataList.forEach((impt) => {
             let hasMatched = false;
@@ -127,8 +127,8 @@ export default defineComponent({
           // console.log(payload);
           $q.bex
             .send('storage.set', payload)
-            .then((res: StorageDrawerData<UriData[]>) => {
-              props.onSuccess?.apply(res.data);
+            .then((res) => {
+              props.onSuccess?.apply(res.data as UriData[]);
               hide();
             })
             .catch((e) => {

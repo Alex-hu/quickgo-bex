@@ -107,7 +107,7 @@
 </template>
 <script lang="ts">
 import { defineComponent, ref, computed } from 'vue';
-import { StorageDrawerData, UriData } from './types';
+import { UriData } from './types';
 import ConfigFormDialog from './ConfigFormDialog.vue';
 import ImportDialog from './ImportDialog.vue';
 import { useQuasar } from 'quasar';
@@ -204,8 +204,8 @@ export default defineComponent({
     const refresh = () => {
       void $q.bex
         .send('storage.get', { key: QUICKGO_DATA_LIST_KEY })
-        .then((res: StorageDrawerData<UriData[]>) => {
-          rows.value = res.data;
+        .then((res) => {
+          rows.value = (res.data as UriData[] | undefined) ?? [];
         });
     };
     refresh();

@@ -8,28 +8,32 @@
   "scripts": {
     "lint": "eslint --ext .js,.ts,.vue ./",
     "format": "prettier --write \"**/*.{js,ts,vue,scss,html,md,json}\" --ignore-path .gitignore",
-    "test": "echo \"No test specified\" && exit 0"
+    "test": "echo \"No test specified\" && exit 0",
+    "dev": "quasar dev -m bex",
+    "dev:bex": "quasar dev -m bex",
+    "build:bex": "quasar build -m bex"
   },
   "dependencies": {
-    "@quasar/extras": "^1.0.0",
-    "@types/uuid": "^8.3.4",
-    "axios": "^0.21.1",
-    "core-js": "^3.6.5",
-    "quasar": "^2.0.0",
-    "vue": "^3.0.0",
-    "vue-i18n": "^9.0.0",
-    "vue-router": "^4.0.0"
+    "@quasar/extras": "^1.16.12",
+    "@types/uuid": "^9.0.8",
+    "axios": "^1.7.4",
+    "core-js": "^3.37.1",
+    "quasar": "^2.16.10",
+    "vue": "^3.4.37",
+    "vue-i18n": "^9.13.1",
+    "vue-router": "^4.4.3"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "^7.13.14",
-    "@quasar/app": "^3.0.0",
-    "@types/node": "^12.20.21",
-    "@typescript-eslint/eslint-plugin": "^5.10.0",
-    "@typescript-eslint/parser": "^5.10.0",
-    "eslint": "^7.14.0",
-    "eslint-config-prettier": "^8.1.0",
-    "eslint-plugin-vue": "^7.0.0",
-    "prettier": "^2.5.1"
+    "@babel/eslint-parser": "^7.25.1",
+    "@quasar/app-webpack": "^3.0.0",
+    "@types/node": "^22.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.1",
+    "@typescript-eslint/parser": "^8.0.1",
+    "babel-loader": "^10.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-vue": "^9.27.0",
+    "prettier": "^3.3.3"
   },
   "browserslist": [
     "last 10 Chrome versions",
@@ -43,8 +47,14 @@
     "last 5 Opera versions"
   ],
   "engines": {
-    "node": ">= 12.22.1",
+    "node": ">= 16.14.0",
     "npm": ">= 6.13.4",
     "yarn": ">= 1.21.1"
+  },
+  "packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0",
+  "pnpm": {
+    "patchedDependencies": {
+      "@quasar/app-webpack@3.15.1": "patches/@quasar__app-webpack@3.15.1.patch"
+    }
   }
 }
